@@ -1,3 +1,5 @@
+const parser = new DOMParser();
+
 class User {
     constructor(name, posts) {
         this.name = name;
@@ -41,11 +43,11 @@ class User {
     }
   
     get isPost(){
-      return isPurchase();
+      return this.isPurchase();
     }
   
     isPurchase(){
-      const regex = /(Total )[\$][\d]+[\.][\d]{2}/g;
+      const regex = /((recei(pts?|ved)|confirm(ation|ed)|purchas(ed?|e)|total|order))/gi;
       if(this.bod.matchAll(regex) != []){
         return true;
       } else {
@@ -54,19 +56,42 @@ class User {
     }
   
     createPost(){
+        const doc3 = parser.parseFromString(this.bod, "text/html");
+        const nq = /(.+\s+)((qty|Qty|Quantity|quantity)\W+\s+)+([0-9]+)/gi;
+        const y = doc3.body.firstChild.textContent;
         const regex = /(Total )[\$][\d]+[\.][\d]{2}/g;
-        const rt = /^(\D.*\S)\s+\$([0-9.]+)\)?\s*/gim
+        const rt = /^(\D.*\S)\s+\$([0-9.]+)\)?\s*/gim;
         const website = /[\w]+[\.](com)/gim
         const subdomains = /.*\.(edu|com|net|org)$/
-        const name = website.replace(".com", "");
+        //const name = website.replace(".com", "");
         const clean = /\r?\n|\r/g;
-        const foundcom = [...paragraph.matchAll(r)];
-        const namec = foundcom[0][0].match(n);
-        const price = [...paragraph.matchAll(rt)];
-        const w = foundcom[0][0].replace(clean, "");
-        const c = namec.replace(clean, "");
-        const p = price[0][1].replace(clean, "");
-        const i = "";
+        var foundcom = [...y.matchAll(website)];
+        if(foundcom.length != 0){
+          var namec = foundcom[0][0].replace(".com", "");
+          var w = foundcom[0][0].replace(clean, "");
+          var c = namec.replace(clean, "");
+        } else {
+          namec = "";
+          w = "";
+          c = "";
+        }
+        var price = [...y.matchAll(rt)];
+        if(price.length != 0){
+          var p = price[0][1].replace(clean, "");
+        } else {
+          p = "";
+        }
+        const quan = [...y.matchAll(nq)];
+        var i;
+        if(quan.length != 0){
+          console.log(quan);
+          const qu = quan[0][0].replace(clean, "");
+          i = qu;
+        } else if(price.length != 0){
+          i = price[0][0].replace(clean,"")
+        } else {
+          i = "";
+        }
         const l = "";
         const im = "";
         return new Post(w, c, i, p, l, im);
@@ -96,3 +121,5 @@ class User {
       "image": this.image};
     }
   }
+
+  

@@ -1,0 +1,80 @@
+<script src="https://apis.google.com/js/api.js"></script>
+<script src="/SoShUser.js"></script>
+<script>
+  /**
+   * Sample JavaScript code for gmail.users.messages.list
+   * See instructions for running APIs Explorer code samples locally:
+   * https://developers.google.com/explorer-help/guides/code_samples#javascript
+   */
+
+  function authenticate() {
+    return gapi.auth2.getAuthInstance()
+        .signIn({scope: "https://mail.google.com/ https://www.googleapis.com/auth/gmail.readonly"})
+        .then(function(r) { console.log("Sign-in successful", r); },
+              function(err) { console.error("Error signing in", err); });
+  }
+
+  function loadClient() {
+    gapi.client.setApiKey("AIzaSyAUSNeT750wI-oDmpQm4AZcsYmZfc-ShSU");
+    return gapi.client.load("https://gmail.googleapis.com/$discovery/rest?version=v1")
+        .then(function() { console.log("GAPI client loaded for API"); },
+              function(err) { console.error("Error loading GAPI client for API", err); });
+  }
+
+  
+  var decode = function(input) {
+        // Replace non-url compatible chars with base64 standard chars
+        input = input.replace(/-/g, '+');
+        input = input.replace(/_/g, '/');
+
+        // Pad out with standard base64 required padding characters
+        var pad = input.length % 4;
+        if(pad) {
+          if(pad === 1) {
+            throw new Error('InvalidLengthError: Input base64url string is the wrong length to determine padding');
+          }
+          input += new Array(5-pad).join('=');
+        }
+
+        return input
+    }
+
+  // Make sure the client is loaded and sign-in is complete before calling this method.
+  // fcm key AIzaSyCj1ZTZ2FAe62VzQ9cP-0XfPnJidt6TF48
+  function execute() {
+    var pageToken;
+    gapi.client.gmail.users.messages.list({
+      "userId": "me"
+    })
+        .then(function(response) {
+                // Handle the results here (response.result has the parsed body).
+                console.log("Response", response);
+                const po = [];
+                pageToken = response.result.nextPageToken;
+                response.result.messages.forEach(element => {
+                  const einfo = gapi.client.gmail.users.messages.get({
+                    "userId": "me",
+                    "id": element.id
+                  }).then((res)=>{
+                    //console.log(res);
+                    var body = decode(res.result.payload.parts[1].body.data);
+                    body = window.atob(body);
+                    //console.log(body);
+                    const post = new Body(body);
+                    if(post.isPost){
+                      po.push(post.post.data)
+                    }
+                  }).catch((err)=>{
+                    console.log(err);
+                  })
+                });
+                console.log(po)
+              },
+              function(err) { console.error("Execute error", err); });
+  }
+  gapi.load("client:auth2", function() {
+    gapi.auth2.init({client_id: "342162757131-ltcjavnkgijv5f96e7jbhqbtd0m1jg2g.apps.googleusercontent.com"});
+  });
+</script>
+<button onclick="authenticate().then(loadClient)">authorize and load</button>
+<button onclick="execute()">execute</button>

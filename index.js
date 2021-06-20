@@ -16,18 +16,30 @@ const envFilePath = path.resolve(__dirname, './.env');
 const env = require("dotenv").config({ path: envFilePath });
 var base64 = require('js-base64').Base64;
 
-var serviceAccount = require("./icarus-b84d3-firebase-adminsdk-5k6n2-dbbdad5740.json");
+var serviceAccount = require("./soshwrldinc-firebase-adminsdk-ky99h-dc649f9567.json");
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
 
 const db = admin.firestore();
+const userbase = db.collection('users');
 
 import {User, Body, Post} from './SoShUser.js'
 // const subscriptionName = 'YOUR_SUBSCRIPTION_NAME';
 // const timeout = 60;
+app.use(express.static(__dirname + '/public'));
 
+app.post('/access', (req,res) => {
+  var t = req.body.access_token;
+  userbase.doc(uid).update({access_token: t}).then(()=>{
+    res.status(200).send();
+  });
+
+
+})
+
+  //////////////////////////////////////////////////////////////////////////////////////
 // Imports the Google Cloud client library
 const {PubSub} = require('@google-cloud/pubsub');
 
@@ -119,7 +131,7 @@ async function listUnreadMsgs(auth) {
     gmail.users.history.list({
         userId: "me",
         startHistoryId: 2982217,
-        labelId: 'Label_8061975816208384485'
+        labelId: 'CATEGORY_PERSONAL'
     }, async function (err, results) {
         // https://developers.google.com/gmail/api/v1/reference/users/history/list#response
         if (err) return console.log(err);
@@ -151,12 +163,13 @@ async function watchMyLabel(auth) {
     const res = await gmail.users.watch({
         userId: 'me',
         requestBody: {
-            labelIds: ['Label_8061975816208384485', 'UNREAD'],
+            labelIds: ['CATEGORY_PERSONAL'],
             labelFilterAction: "include",
             topicName: 'projects/soshwrldinc/topics/updates'
         }
     });
 }
+
 //client id 342162757131-ltcjavnkgijv5f96e7jbhqbtd0m1jg2g.apps.googleusercontent.com
 //client secret xLa_tAN5z9GCCUIGorIqopBb
 function listenForMessages() {
@@ -212,3 +225,10 @@ function listenForMessages() {
 }
 
 listenForMessages();
+
+app.listen(5000, () => console.log(`Node server listening at https://gurugains-fac88.web.app:${5000}/`));
+
+// // Create and Deploy Your First Cloud Functions
+// // https://firebase.google.com/docs/functions/write-firebase-functions
+//
+exports.app = functions.https.onRequest(app);
