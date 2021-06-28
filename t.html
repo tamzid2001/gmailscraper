@@ -7,6 +7,14 @@
    * https://developers.google.com/explorer-help/guides/code_samples#javascript
    */
 
+//    fetch(`https://www.googleapis.com/customsearch/v1?key=AIzaSyAUSNeT750wI-oDmpQm4AZcsYmZfc-ShSU&cx=430def6a414e30530&q=\"
+// Nike Air Force 1 Pixel Women's Shoe\":nike.com`)
+//   .then((res)=>{return res.json()})
+//   .then((res) => {console.log(res.items[0].link, res.items[0].pagemap.cse_thumbnail[0].src)})
+//   .catch((err) => {
+//   console.log(err);
+//   });
+
   function authenticate() {
     return gapi.auth2.getAuthInstance()
         .signIn({scope: "https://mail.google.com/ https://www.googleapis.com/auth/gmail.readonly"})
@@ -21,7 +29,7 @@
               function(err) { console.error("Error loading GAPI client for API", err); });
   }
 
-  
+
   var decode = function(input) {
         // Replace non-url compatible chars with base64 standard chars
         input = input.replace(/-/g, '+');
@@ -38,7 +46,50 @@
 
         return input
     }
-
+    function recursiveExec(page) {
+      if(page){
+    gapi.client.gmail.users.messages.list({
+      "userId": "me",
+      "pageToken": page
+    })
+        .then(function(response) {
+                // Handle the results here (response.result has the parsed body).
+                console.log("Response", response);
+                const po = [];
+                response.result.messages.forEach(element => {
+                  const einfo = gapi.client.gmail.users.messages.get({
+                    "userId": "me",
+                    "id": element.id
+                  }).then((res)=>{
+                    //console.log(res);
+                    var json = res.result.payload.parts
+                    for(var i = 0; i < json.length; i++) {
+                      var obj = json[i];
+                      if(obj.mimeType == "text/html"){
+                        var body = decode(obj.body.data);
+                        body = window.atob(body);
+                        const post = new Body(body);
+                        if(post.isPost){
+                          po.push(post.post.data)
+                        }
+                      }
+                    }
+                    // var body = decode(res.result.payload.parts[0].body.data);
+                    // body = window.atob(body);
+                    // //console.log(body);
+                    // const post = new Body(body);
+                    // if(post.isPost){
+                    //   po.push(post.post.data)
+                    // }
+                  }).catch((err)=>{
+                    console.log(err);
+                  })
+                });
+                console.log(po)
+              },
+              function(err) { console.error("Execute error", err); });
+            }
+  }
   // Make sure the client is loaded and sign-in is complete before calling this method.
   // fcm key AIzaSyCj1ZTZ2FAe62VzQ9cP-0XfPnJidt6TF48
   function execute() {
@@ -55,26 +106,86 @@
                   const einfo = gapi.client.gmail.users.messages.get({
                     "userId": "me",
                     "id": element.id
-                  }).then((res)=>{
+                  }).then(async (res)=>{
                     //console.log(res);
-                    var body = decode(res.result.payload.parts[1].body.data);
-                    body = window.atob(body);
-                    //console.log(body);
-                    const post = new Body(body);
-                    if(post.isPost){
-                      po.push(post.post.data)
+                    var json = res.result.payload.parts
+                    for(var i = 0; i < json.length; i++) {
+                      var obj = json[i];
+                      if(obj.mimeType == "text/html"){
+                        var body = decode(obj.body.data);
+                        body = window.atob(body);
+                        const post = new Body(body);
+                        if(post.isPost){
+                          var pox = await post.post;
+                          po.push(pox.data)
+                        }
+                      }
                     }
+                    // var body = decode(res.result.payload.parts[0].body.data);
+                    // body = window.atob(body);
+                    // //console.log(body);
+                    // const post = new Body(body);
+                    // if(post.isPost){
+                    //   po.push(post.post.data)
+                    // }
                   }).catch((err)=>{
                     console.log(err);
                   })
                 });
                 console.log(po)
+                //recursiveExec(pageToken);
               },
               function(err) { console.error("Execute error", err); });
+              
   }
   gapi.load("client:auth2", function() {
     gapi.auth2.init({client_id: "342162757131-ltcjavnkgijv5f96e7jbhqbtd0m1jg2g.apps.googleusercontent.com"});
   });
+
+//viglinks - merchant status - check if email domain is valid
+//   headers = {
+//   Authorization: "secret <secret key>"
+// }
+
+// params = {
+//   domain: "nike.com"
+// }
+
+// url = "https://publishers.viglink.com/api/merchant/search"
+
+// response = HTTParty.get(url, headers: headers, query: params)
+
+//curl -i -X GET 'http://api.viglink.com/api/link?format=json&out=https://www.walmart.com/ip/105218827&key={YOUR API KEY}'
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// function shein(userID, userName, userImageURL, timestamp, emailBody) {
+
+// let storeName = "SHEIN"
+// let regex = "bingbongbing"
+// //Apply regex to email body 
+// //and get itemName, itemImageURL, itemLink
+
+
+//   postArray = []
+//   var object = {
+//     userID: userID,
+//     userName: userName,
+//     userImageURL: userImageURL,
+//     timestamp: timestamp,
+//     storeName: storeName,
+//     itemName: "???",
+//     itemImageURL: "???",
+//     itemLink: "???",
+//     affiliateLink: "???"
+//   };
+// return postArray
+// }
+
+  //google search api key AIzaSyAUSNeT750wI-oDmpQm4AZcsYmZfc-ShSU
+  //csx 430def6a414e30530
+
+  //<link rel="shortcut icon" type="image/jpg" href="SoShfavicon.png" />
+  //<meta name="google-site-verification" content="qhfK8oKvt_9rGUGBXFMWwPMViOFznE-mkDWOkzcwbnQ" />
 </script>
 <button onclick="authenticate().then(loadClient)">authorize and load</button>
 <button onclick="execute()">execute</button>
